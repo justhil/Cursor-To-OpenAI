@@ -1,9 +1,16 @@
 const { v4: uuidv4 } = require('uuid');
 const zlib = require('zlib');
-const $root = require('./message.js');
+const protobuf = require('protobufjs');
+const path = require('path');
 const crypto = require('crypto');
 
 const regex = /<\|BEGIN_SYSTEM\|>.*?<\|END_SYSTEM\|>.*?<\|BEGIN_USER\|>.*?<\|END_USER\|>/s;
+
+const root = protobuf.loadSync(path.join(__dirname, 'message.proto'));
+const $root = {
+  ChatMessage: root.lookupType('ChatMessage'),
+  ResMessage: root.lookupType('ResMessage')
+};
 
 async function stringToHex(messages, modelName) {
   const formattedMessages = messages.map((msg) => ({
@@ -25,6 +32,10 @@ async function stringToHex(messages, modelName) {
     requestId: uuidv4(),
     summary: '',
     conversationId: uuidv4(),
+    flag: 1,
+    option: 1,
+    type: 1,
+    state: 0,
   };
   const errMsg = $root.ChatMessage.verify(message);
   if (errMsg) throw Error(errMsg);

@@ -9,6 +9,12 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 app.use(morgan(process.env.MORGAN_FORMAT ?? 'tiny'));
 
+// 添加错误处理中间件
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+  res.status(500).json({ error: 'Internal server error' });
+});
+
 app.post('/v1/chat/completions', async (req, res) => {
   // o1开头的模型，不支持流式输出
   if (req.body.model.startsWith('o1-') && req.body.stream) {
@@ -44,6 +50,28 @@ app.post('/v1/chat/completions', async (req, res) => {
       ?? process.env['x-cursor-checksum'] 
       ?? generateCursorChecksum(authToken.trim());
 
+    try {
+      await fetch('https://api2.cursor.sh/aiserver.v1.AiService/CheckFeatureStatus', {
+        method: 'POST',
+        headers: {
+          'accept-encoding': 'gzip',
+          'authorization': `Bearer ${authToken}`,
+          'connect-protocol-version': '1',
+          'content-type': 'application/proto',
+          'user-agent': 'connect-es/1.6.1',
+          'x-cursor-checksum': checksum,
+          'x-cursor-client-version': '0.45.3',
+          'x-cursor-timezone': 'Asia/Hong_Kong',
+          'x-ghost-mode': 'false',
+          'x-session-id': uuidv4(),
+          'Host': 'api2.cursor.sh',
+        },
+        body: 'cppExistingUserMarketingPopup'
+      });
+    } catch (error) {
+      console.error('CheckFeatureStatus error:', error);
+    }
+
     const response = await fetch('https://api2.cursor.sh/aiserver.v1.AiService/StreamChat', {
       method: 'POST',
       headers: {
@@ -54,8 +82,8 @@ app.post('/v1/chat/completions', async (req, res) => {
         'user-agent': 'connect-es/1.4.0',
         'x-amzn-trace-id': `Root=${uuidv4()}`,
         'x-cursor-checksum': checksum,
-        'x-cursor-client-version': '0.42.3',
-        'x-cursor-timezone': 'Asia/Shanghai',
+        'x-cursor-client-version': '0.45.3',
+        'x-cursor-timezone': 'Asia/Hong_Kong',
         'x-ghost-mode': 'false',
         'x-request-id': uuidv4(),
         Host: 'api2.cursor.sh',
